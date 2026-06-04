@@ -695,175 +695,15 @@ let healthFormType = 'vaccination';
 let activeStatuses = new Set(['Active','Quarantine','Sold','Deceased']);
 let growthChart = null;
 
-const STORAGE_KEY = 'pigtrack_data';
+const STORAGE_KEY = 'pigtrack_v2';
 
 function loadData(){
   const raw = localStorage.getItem(STORAGE_KEY);
-  if(raw){ pigs = JSON.parse(raw); }
-  else { pigs = getSampleData(); saveData(); }
+  pigs = raw ? JSON.parse(raw) : [];
 }
 
 function saveData(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(pigs));
-}
-
-// ── SAMPLE DATA ──────────────────────────────────────────────────
-function getSampleData(){
-  const today = new Date();
-  const daysAgo = n => { const d=new Date(today); d.setDate(d.getDate()-n); return d.toISOString().split('T')[0]; };
-  const monthsAgo = n => { const d=new Date(today); d.setMonth(d.getMonth()-n); return d.toISOString().split('T')[0]; };
-
-  return [
-    {
-      id:'PIG-0001',name:'Blossom',breed:'Large White',sex:'Sow',dob:monthsAgo(18),
-      weight:185,status:'Active',health:'Healthy',pen:'Pen A',sire:'PIG-0010',dam:'PIG-0011',
-      notes:'Top producer, excellent maternal traits.',added:daysAgo(200),
-      vaccinations:[
-        {vaccine:'FMD Vaccine',date:daysAgo(90),due:daysAgo(-90),by:'Dr. Osei'},
-        {vaccine:'PRRS',date:daysAgo(180),due:daysAgo(0),by:'Dr. Mensah'}
-      ],
-      treatments:[],
-      breeding:[
-        {matingDate:daysAgo(60),partner:'PIG-0003',expectedFarrowing:addDays(daysAgo(60),114),
-         alive:11,stillborn:1,weaned:10,litterId:'LIT-001'}
-      ],
-      feedLog:[
-        {date:daysAgo(30),weight:178,feedType:'Gestation Mix',feedAmount:3.2},
-        {date:daysAgo(14),weight:182,feedType:'Gestation Mix',feedAmount:3.2},
-        {date:daysAgo(0),weight:185,feedType:'Lactation Mix',feedAmount:4.0}
-      ]
-    },
-    {
-      id:'PIG-0002',name:'Thunder',breed:'Duroc',sex:'Boar',dob:monthsAgo(24),
-      weight:240,status:'Active',health:'Healthy',pen:'Boar Pen',sire:'',dam:'',
-      notes:'High libido, excellent conformation. Used for AI program.',added:daysAgo(300),
-      vaccinations:[
-        {vaccine:'FMD Vaccine',date:daysAgo(30),due:addDays(new Date().toISOString().split('T')[0],60),by:'Dr. Osei'}
-      ],
-      treatments:[],breeding:[],
-      feedLog:[
-        {date:daysAgo(60),weight:230,feedType:'Boar Ration',feedAmount:3.0},
-        {date:daysAgo(30),weight:236,feedType:'Boar Ration',feedAmount:3.0},
-        {date:daysAgo(0),weight:240,feedType:'Boar Ration',feedAmount:3.2}
-      ]
-    },
-    {
-      id:'PIG-0003',name:'Rosie',breed:'Landrace',sex:'Sow',dob:monthsAgo(22),
-      weight:165,status:'Active',health:'Under Treatment',pen:'Pen B',sire:'PIG-0002',dam:'',
-      notes:'Currently on antibiotics for mild respiratory issue.',added:daysAgo(180),
-      vaccinations:[
-        {vaccine:'PCV2',date:daysAgo(120),due:addDays(daysAgo(120),180),by:'Dr. Mensah'}
-      ],
-      treatments:[
-        {medication:'Amoxicillin',dosage:'10ml',condition:'Respiratory infection',date:daysAgo(3),vet:'Dr. Osei'}
-      ],
-      breeding:[
-        {matingDate:daysAgo(100),partner:'PIG-0002',expectedFarrowing:addDays(daysAgo(100),114),
-         alive:9,stillborn:0,weaned:9,litterId:'LIT-002'}
-      ],
-      feedLog:[
-        {date:daysAgo(20),weight:160,feedType:'Sow Ration',feedAmount:2.8},
-        {date:daysAgo(0),weight:165,feedType:'Sow Ration',feedAmount:3.0}
-      ]
-    },
-    {
-      id:'PIG-0004',name:'Hamlet',breed:'Pietrain',sex:'Barrow',dob:monthsAgo(6),
-      weight:82,status:'Active',health:'Healthy',pen:'Grower Pen 1',sire:'PIG-0002',dam:'PIG-0001',
-      notes:'Fast grower, good feed conversion.',added:daysAgo(90),
-      vaccinations:[
-        {vaccine:'Mycoplasma',date:daysAgo(30),due:addDays(daysAgo(30),90),by:'Dr. Mensah'}
-      ],
-      treatments:[],breeding:[],
-      feedLog:[
-        {date:daysAgo(45),weight:45,feedType:'Starter',feedAmount:1.2},
-        {date:daysAgo(30),weight:58,feedType:'Grower',feedAmount:1.8},
-        {date:daysAgo(14),weight:72,feedType:'Grower',feedAmount:2.0},
-        {date:daysAgo(0),weight:82,feedType:'Finisher',feedAmount:2.3}
-      ]
-    },
-    {
-      id:'PIG-0005',name:'Daisy',breed:'Mixed',sex:'Gilt',dob:monthsAgo(9),
-      weight:105,status:'Quarantine',health:'Sick',pen:'Quarantine',sire:'',dam:'',
-      notes:'New arrival. Under observation for 14 days. Showing mild fever.',added:daysAgo(5),
-      vaccinations:[],
-      treatments:[
-        {medication:'Paracetamol',dosage:'5ml',condition:'Fever',date:daysAgo(2),vet:'Dr. Osei'}
-      ],
-      breeding:[],
-      feedLog:[
-        {date:daysAgo(2),weight:106,feedType:'Grower',feedAmount:1.8},
-        {date:daysAgo(0),weight:105,feedType:'Grower',feedAmount:1.6}
-      ]
-    },
-    {
-      id:'PIG-0006',name:'Spot',breed:'Large White',sex:'Barrow',dob:monthsAgo(8),
-      weight:98,status:'Active',health:'Healthy',pen:'Grower Pen 2',sire:'PIG-0002',dam:'PIG-0003',
-      notes:'',added:daysAgo(85),
-      vaccinations:[
-        {vaccine:'FMD Vaccine',date:daysAgo(20),due:addDays(daysAgo(20),180),by:'Staff'}
-      ],
-      treatments:[],breeding:[],
-      feedLog:[
-        {date:daysAgo(30),weight:70,feedType:'Grower',feedAmount:2.0},
-        {date:daysAgo(14),weight:85,feedType:'Grower',feedAmount:2.2},
-        {date:daysAgo(0),weight:98,feedType:'Finisher',feedAmount:2.5}
-      ]
-    },
-    {
-      id:'PIG-0007',name:'Petunia',breed:'Duroc',sex:'Sow',dob:monthsAgo(30),
-      weight:200,status:'Active',health:'Healthy',pen:'Pen A',sire:'',dam:'',
-      notes:'Due to farrow in ~3 weeks. 4th parity.',added:daysAgo(400),
-      vaccinations:[
-        {vaccine:'E.coli',date:daysAgo(21),due:addDays(daysAgo(21),365),by:'Dr. Mensah'},
-        {vaccine:'FMD Vaccine',date:daysAgo(14),due:addDays(new Date().toISOString().split('T')[0],20),by:'Dr. Osei'}
-      ],
-      treatments:[],
-      breeding:[
-        {matingDate:daysAgo(91),partner:'PIG-0002',expectedFarrowing:addDays(daysAgo(91),114),
-         alive:0,stillborn:0,weaned:0,litterId:'LIT-003'}
-      ],
-      feedLog:[
-        {date:daysAgo(14),weight:196,feedType:'Gestation Mix',feedAmount:3.5},
-        {date:daysAgo(0),weight:200,feedType:'Gestation Mix',feedAmount:3.8}
-      ]
-    },
-    {
-      id:'PIG-0008',name:'Grunter',breed:'Pietrain',sex:'Boar',dob:monthsAgo(36),
-      weight:220,status:'Sold',health:'Healthy',pen:'—',sire:'',dam:'',
-      notes:'Sold to neighbouring farm 2024-01-15. Excellent genetics.',added:daysAgo(500),
-      vaccinations:[
-        {vaccine:'FMD Vaccine',date:daysAgo(200),due:daysAgo(20),by:'Dr. Osei'}
-      ],
-      treatments:[],breeding:[],
-      feedLog:[
-        {date:daysAgo(210),weight:210,feedType:'Boar Ration',feedAmount:3.0},
-        {date:daysAgo(0),weight:220,feedType:'Boar Ration',feedAmount:3.2}
-      ]
-    },
-    {
-      id:'PIG-0009',name:'Nala',breed:'Landrace',sex:'Gilt',dob:monthsAgo(7),
-      weight:89,status:'Active',health:'Recovered',pen:'Grower Pen 1',sire:'PIG-0002',dam:'PIG-0007',
-      notes:'Recovered from enteritis last month. Doing well.',added:daysAgo(75),
-      vaccinations:[
-        {vaccine:'Parvovirus',date:daysAgo(45),due:addDays(daysAgo(45),365),by:'Dr. Mensah'}
-      ],
-      treatments:[
-        {medication:'Enrofloxacin',dosage:'3ml',condition:'Enteritis',date:daysAgo(30),vet:'Dr. Mensah'}
-      ],
-      breeding:[],
-      feedLog:[
-        {date:daysAgo(40),weight:70,feedType:'Grower',feedAmount:1.8},
-        {date:daysAgo(20),weight:80,feedType:'Grower',feedAmount:2.0},
-        {date:daysAgo(0),weight:89,feedType:'Grower',feedAmount:2.2}
-      ]
-    },
-    {
-      id:'PIG-0010',name:'Baron',breed:'Large White',sex:'Boar',dob:monthsAgo(48),
-      weight:280,status:'Deceased',health:'Healthy',pen:'—',sire:'',dam:'',
-      notes:'Deceased on 2024-11-01. Heart failure.',added:daysAgo(600),
-      vaccinations:[],treatments:[],breeding:[],feedLog:[]
-    }
-  ];
 }
 
 function addDays(dateStr, n){
@@ -937,12 +777,65 @@ function renderDashboard(){
   const icons={Active:'fa-heart',Quarantine:'fa-shield-virus',Sold:'fa-tag',Deceased:'fa-cross'};
   const colors={Active:'green',Quarantine:'orange',Sold:'blue',Deceased:'grey'};
   const total=pigs.length;
-  let html=`<div class="stat-icon grey"><i class="fas fa-piggy-bank"></i></div><div class="stat-info"><div class="val">${total}</div><div class="lbl">Total Pigs</div></div>`;
   const c=document.getElementById('stat-cards');
   c.innerHTML='';
+
+  if(total===0){
+    document.getElementById('page-dashboard').querySelector('.dash-grid').innerHTML=`
+      <div style="grid-column:1/-1">
+        <div style="background:#fff;border-radius:14px;box-shadow:var(--shadow);padding:52px 40px;text-align:center;max-width:600px;margin:0 auto">
+          <div style="font-size:64px;margin-bottom:16px">🐷</div>
+          <h2 style="font-size:22px;font-weight:700;margin-bottom:10px">Welcome to PigTrack</h2>
+          <p style="color:var(--text-muted);font-size:14.5px;max-width:380px;margin:0 auto 28px;line-height:1.7">
+            Your piggery records are empty. Add your first pig to start tracking health, breeding, feed, and growth.
+          </p>
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="openAddPig()"><i class="fas fa-plus"></i> Add First Pig</button>
+            <button class="btn btn-outline" onclick="document.querySelector('[data-page=pigs]').click()"><i class="fas fa-list"></i> Go to Pig Records</button>
+          </div>
+          <div style="margin-top:36px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;text-align:left">
+            <div style="background:var(--green-pale);border-radius:10px;padding:14px 16px">
+              <div style="font-size:22px;margin-bottom:6px">📋</div>
+              <div style="font-weight:700;font-size:13px;margin-bottom:3px">Profile & Records</div>
+              <div style="font-size:12px;color:var(--text-muted)">ID, breed, sex, age, weight, parentage</div>
+            </div>
+            <div style="background:var(--blue-light);border-radius:10px;padding:14px 16px">
+              <div style="font-size:22px;margin-bottom:6px">💉</div>
+              <div style="font-weight:700;font-size:13px;margin-bottom:3px">Health Tracking</div>
+              <div style="font-size:12px;color:var(--text-muted)">Vaccinations, treatments, alerts</div>
+            </div>
+            <div style="background:var(--orange-light);border-radius:10px;padding:14px 16px">
+              <div style="font-size:22px;margin-bottom:6px">🐣</div>
+              <div style="font-weight:700;font-size:13px;margin-bottom:3px">Breeding & Growth</div>
+              <div style="font-size:12px;color:var(--text-muted)">Litters, farrowing, weight logs</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  // restore dash-grid panels if they were replaced by welcome card
+  const dg=document.getElementById('page-dashboard').querySelector('.dash-grid');
+  if(!dg.querySelector('.panel')){
+    dg.innerHTML=`
+      <div class="panel">
+        <div class="panel-hd"><h3><i class="fas fa-bell" style="color:var(--orange);margin-right:6px"></i>Upcoming Farrowings (30 days)</h3></div>
+        <div class="panel-body" id="farrowing-panel"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-hd"><h3><i class="fas fa-syringe" style="color:var(--red);margin-right:6px"></i>Vaccination Alerts</h3></div>
+        <div class="panel-body" id="vacc-panel"></div>
+      </div>
+      <div class="panel" style="grid-column:1/-1">
+        <div class="panel-hd"><h3><i class="fas fa-history" style="color:var(--green-dark);margin-right:6px"></i>Recent Activity</h3></div>
+        <div class="panel-body" id="activity-panel"></div>
+      </div>`;
+  }
+
   const totalCard=document.createElement('div');
   totalCard.className='stat-card';
-  totalCard.innerHTML=html;
+  totalCard.innerHTML=`<div class="stat-icon grey"><i class="fas fa-piggy-bank"></i></div><div class="stat-info"><div class="val">${total}</div><div class="lbl">Total Pigs</div></div>`;
   c.appendChild(totalCard);
 
   statuses.forEach(s=>{

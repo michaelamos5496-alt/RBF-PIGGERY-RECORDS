@@ -582,7 +582,7 @@ textarea.form-control{resize:vertical;min-height:70px}
             <select class="filter-select" id="f-breed" onchange="applyFilters()">
               <option value="">All Breeds</option>
               <option>Large White</option><option>Duroc</option><option>Landrace</option>
-              <option>Pietrain</option><option>Mixed</option>
+              <option>Pietrain</option><option>Berkshire</option><option>F1</option><option>SG - 11</option><option>Mixed Breed</option>
             </select>
           </div>
           <div class="filter-group">
@@ -697,7 +697,8 @@ textarea.form-control{resize:vertical;min-height:70px}
     <div class="modal-header">
       <h2 id="modal-pig-title" style="font-size:15px;font-weight:700;flex:1">Pig Details</h2>
       <div style="display:flex;gap:8px;margin-left:auto">
-        <button class="btn btn-outline btn-sm" onclick="editCurrentPig()"><i class="fas fa-edit"></i> Edit</button>
+        <button class="btn btn-outline btn-sm" onclick="printPigRecord()"><i class="fas fa-print"></i><span class="btn-add-label"> Print</span></button>
+        <button class="btn btn-outline btn-sm" onclick="editCurrentPig()"><i class="fas fa-edit"></i><span class="btn-add-label"> Edit</span></button>
         <button class="btn btn-danger btn-sm" onclick="deleteCurrentPig()"><i class="fas fa-trash"></i></button>
         <button class="modal-close" onclick="closeModal('pig-modal')"><i class="fas fa-times"></i></button>
       </div>
@@ -726,33 +727,46 @@ textarea.form-control{resize:vertical;min-height:70px}
     </div>
     <div class="modal-body" style="padding:20px 24px">
       <form id="pig-form" onsubmit="savePig(event)">
+        <div style="margin-bottom:20px;padding:12px;background:#f0f7f0;border-radius:8px;font-size:12px;font-weight:600;color:#2E7D32;display:none" id="pf-gender-badge"></div>
         <div class="form-grid">
           <div class="form-group">
-            <label class="form-label">Ear Tag / ID <span class="req">*</span></label>
+            <label class="form-label">TAG # <span class="req">*</span></label>
             <input class="form-control" id="pf-id" placeholder="PIG-0001" required>
           </div>
           <div class="form-group">
-            <label class="form-label">Name (optional)</label>
+            <label class="form-label">NAME (optional)</label>
             <input class="form-control" id="pf-name" placeholder="e.g. Blossom">
           </div>
           <div class="form-group">
-            <label class="form-label">Breed <span class="req">*</span></label>
+            <label class="form-label">BREED <span class="req">*</span></label>
             <select class="form-control" id="pf-breed" required>
               <option value="">Select breed</option>
               <option>Large White</option><option>Duroc</option><option>Landrace</option>
-              <option>Pietrain</option><option>Mixed</option>
+              <option>Pietrain</option><option>Berkshire</option><option>F1</option><option>SG - 11</option><option>Mixed Breed</option>
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Sex <span class="req">*</span></label>
-            <select class="form-control" id="pf-sex" required>
-              <option value="">Select sex</option>
+            <label class="form-label">COLOUR</label>
+            <input class="form-control" id="pf-colour" placeholder="e.g. Black, Red, White">
+          </div>
+          <div class="form-group">
+            <label class="form-label">GENDER <span class="req">*</span></label>
+            <select class="form-control" id="pf-sex" required onchange="updateGenderFields()">
+              <option value="">Select gender</option>
               <option>Boar</option><option>Sow</option><option>Gilt</option><option>Barrow</option>
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Date of Birth <span class="req">*</span></label>
+            <label class="form-label">BREED PURPOSE</label>
+            <input class="form-control" id="pf-breed-purpose" placeholder="e.g. Breeding, Meat, Show">
+          </div>
+          <div class="form-group">
+            <label class="form-label">DATE OF BIRTH <span class="req">*</span></label>
             <input class="form-control" id="pf-dob" type="date" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">DATE ACQUIRED</label>
+            <input class="form-control" id="pf-date-acquired" type="date">
           </div>
           <div class="form-group">
             <label class="form-label">Weight (kg)</label>
@@ -775,16 +789,107 @@ textarea.form-control{resize:vertical;min-height:70px}
             <input class="form-control" id="pf-pen" placeholder="e.g. Pen A, Barn 2">
           </div>
           <div class="form-group">
-            <label class="form-label">Sire ID</label>
+            <label class="form-label">BOAR TAG #</label>
             <input class="form-control" id="pf-sire" placeholder="Parent boar ID">
           </div>
           <div class="form-group">
-            <label class="form-label">Dam ID</label>
+            <label class="form-label">SOW TAG #</label>
             <input class="form-control" id="pf-dam" placeholder="Parent sow ID">
+          </div>
+          <div class="form-group">
+            <label class="form-label">ACQUIRED FROM</label>
+            <input class="form-control" id="pf-acquired-from" placeholder="Supplier/Farm name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">PHONE</label>
+            <input class="form-control" id="pf-phone" type="tel" placeholder="Contact number">
+          </div>
+          <div class="form-group">
+            <label class="form-label">ADDRESS</label>
+            <input class="form-control" id="pf-address" placeholder="Supplier address">
           </div>
           <div class="form-group full">
             <label class="form-label">Notes</label>
             <textarea class="form-control" id="pf-notes" placeholder="Any observations…"></textarea>
+          </div>
+        </div>
+
+        <!-- Female-specific records section -->
+        <div id="female-records-section" style="display:none;margin-top:24px;padding-top:20px;border-top:2px solid #e0e0e0">
+          <h3 style="font-size:14px;font-weight:700;color:#2E7D32;margin-bottom:16px">Female-Specific Records (Optional)</h3>
+
+          <div style="margin-bottom:20px;background:#f9f9f9;padding:14px;border-radius:8px">
+            <label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:8px">HEAT OBSERVATION RECORD</label>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" style="font-size:12px">Date Detected</label>
+                <input class="form-control" id="pf-heat-date" type="date">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-size:12px">Signs Detected</label>
+                <input class="form-control" id="pf-heat-signs" placeholder="e.g. Swollen vulva, standing reflex">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-size:12px">Heat End Date</label>
+                <input class="form-control" id="pf-heat-end" type="date">
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:20px;background:#f9f9f9;padding:14px;border-radius:8px">
+            <label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:8px">BREEDING AND GESTATION RECORD</label>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" style="font-size:12px">Mated Date</label>
+                <input class="form-control" id="pf-gest-mated" type="date">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-size:12px">Due Date</label>
+                <input class="form-control" id="pf-gest-due" type="date">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-size:12px">Boar Tag #</label>
+                <input class="form-control" id="pf-gest-boar" placeholder="Breeding boar ID">
+              </div>
+            </div>
+          </div>
+
+          <div style="background:#f9f9f9;padding:14px;border-radius:8px">
+            <label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:8px">BREEDING AND FARROWING RECORD</label>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" style="font-size:12px">Farrowing Date</label>
+                <input class="form-control" id="pf-farr-date" type="date">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-size:12px">No. Born</label>
+                <input class="form-control" id="pf-farr-born" type="number" min="0">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-size:12px">No. Female</label>
+                <input class="form-control" id="pf-farr-female" type="number" min="0">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-size:12px">No. Male</label>
+                <input class="form-control" id="pf-farr-male" type="number" min="0">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-size:12px">No. Live</label>
+                <input class="form-control" id="pf-farr-live" type="number" min="0">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-size:12px">No. Dead</label>
+                <input class="form-control" id="pf-farr-dead" type="number" min="0">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-size:12px">Boar Tag #</label>
+                <input class="form-control" id="pf-farr-boar" placeholder="Breeding boar ID">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-size:12px">Boar Breed</label>
+                <input class="form-control" id="pf-farr-breed" placeholder="Boar breed">
+              </div>
+            </div>
           </div>
         </div>
       </form>
@@ -1510,12 +1615,30 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 });
 
 // ── ADD / EDIT PIG ──────────────────────────────────────────────────
+function updateGenderFields(){
+  const sex=document.getElementById('pf-sex').value;
+  const isFemale=sex==='Sow'||sex==='Gilt';
+  const badge=document.getElementById('pf-gender-badge');
+  const femaleSection=document.getElementById('female-records-section');
+
+  if(sex){
+    badge.textContent='✓ '+sex;
+    badge.style.display='block';
+  } else {
+    badge.style.display='none';
+  }
+
+  femaleSection.style.display=isFemale?'block':'none';
+}
+
 function openAddPig(){
   editingPigId=null;
   document.getElementById('pig-form-title').textContent='Add New Pig';
   document.getElementById('pig-form').reset();
   document.getElementById('pf-id').value=nextId();
   document.getElementById('pf-id').readOnly=false;
+  document.getElementById('pf-gender-badge').style.display='none';
+  document.getElementById('female-records-section').style.display='none';
   document.getElementById('pig-form-modal').classList.add('open');
 }
 
@@ -1528,15 +1651,31 @@ function editCurrentPig(){
   document.getElementById('pf-id').readOnly=true;
   document.getElementById('pf-name').value=pig.name||'';
   document.getElementById('pf-breed').value=pig.breed;
+  document.getElementById('pf-colour').value=pig.colour||'';
   document.getElementById('pf-sex').value=pig.sex;
+  document.getElementById('pf-breed-purpose').value=pig.breedPurpose||'';
   document.getElementById('pf-dob').value=pig.dob;
+  document.getElementById('pf-date-acquired').value=pig.dateAcquired||'';
   document.getElementById('pf-weight').value=pig.weight||'';
   document.getElementById('pf-status').value=pig.status;
   document.getElementById('pf-health').value=pig.health;
   document.getElementById('pf-pen').value=pig.pen||'';
   document.getElementById('pf-sire').value=pig.sire||'';
   document.getElementById('pf-dam').value=pig.dam||'';
+  document.getElementById('pf-acquired-from').value=pig.acquiredFrom||'';
+  document.getElementById('pf-phone').value=pig.phone||'';
+  document.getElementById('pf-address').value=pig.address||'';
   document.getElementById('pf-notes').value=pig.notes||'';
+  updateGenderFields();
+  const isFemale=pig.sex==='Sow'||pig.sex==='Gilt';
+  if(isFemale){
+    const heat=pig.heatObservation?.[0];
+    const gest=pig.breedingGestation?.[0];
+    const farr=pig.breedingFarrowing?.[0];
+    if(heat){ document.getElementById('pf-heat-date').value=heat.date||''; document.getElementById('pf-heat-signs').value=heat.description||''; document.getElementById('pf-heat-end').value=heat.heatEnd||''; }
+    if(gest){ document.getElementById('pf-gest-mated').value=gest.matedDate||''; document.getElementById('pf-gest-due').value=gest.dueDate||''; document.getElementById('pf-gest-boar').value=gest.boarTag||''; }
+    if(farr){ document.getElementById('pf-farr-date').value=farr.date||''; document.getElementById('pf-farr-born').value=farr.numberBorn||''; document.getElementById('pf-farr-female').value=farr.numberFemale||''; document.getElementById('pf-farr-male').value=farr.numberMale||''; document.getElementById('pf-farr-live').value=farr.numberLive||''; document.getElementById('pf-farr-dead').value=farr.numberDead||''; document.getElementById('pf-farr-boar').value=farr.boarTag||''; document.getElementById('pf-farr-breed').value=farr.boarBreed||''; }
+  }
   document.getElementById('pig-form-modal').classList.add('open');
 }
 
@@ -1552,15 +1691,44 @@ function savePig(e){
     id,
     name:document.getElementById('pf-name').value.trim(),
     breed,sex,dob,
+    colour:document.getElementById('pf-colour').value.trim(),
+    breedPurpose:document.getElementById('pf-breed-purpose').value.trim(),
+    dateAcquired:document.getElementById('pf-date-acquired').value,
     weight:parseFloat(document.getElementById('pf-weight').value)||null,
     status:document.getElementById('pf-status').value,
     health:document.getElementById('pf-health').value,
     pen:document.getElementById('pf-pen').value.trim(),
     sire:document.getElementById('pf-sire').value.trim(),
     dam:document.getElementById('pf-dam').value.trim(),
+    acquiredFrom:document.getElementById('pf-acquired-from').value.trim(),
+    phone:document.getElementById('pf-phone').value.trim(),
+    address:document.getElementById('pf-address').value.trim(),
     notes:document.getElementById('pf-notes').value.trim(),
     added:new Date().toISOString().split('T')[0]
   };
+
+  const isFemale=sex==='Sow'||sex==='Gilt';
+  if(isFemale){
+    const heatDate=document.getElementById('pf-heat-date').value;
+    const heatSigns=document.getElementById('pf-heat-signs').value.trim();
+    const heatEnd=document.getElementById('pf-heat-end').value;
+    if(heatDate||heatSigns||heatEnd){ data.heatObservation=[{date:heatDate,description:heatSigns,heatEnd}]; }
+
+    const gestMated=document.getElementById('pf-gest-mated').value;
+    const gestDue=document.getElementById('pf-gest-due').value;
+    const gestBoar=document.getElementById('pf-gest-boar').value.trim();
+    if(gestMated||gestDue||gestBoar){ data.breedingGestation=[{matedDate:gestMated,dueDate:gestDue,boarTag:gestBoar}]; }
+
+    const farrDate=document.getElementById('pf-farr-date').value;
+    const farrBorn=parseInt(document.getElementById('pf-farr-born').value)||0;
+    const farrFemale=parseInt(document.getElementById('pf-farr-female').value)||0;
+    const farrMale=parseInt(document.getElementById('pf-farr-male').value)||0;
+    const farrLive=parseInt(document.getElementById('pf-farr-live').value)||0;
+    const farrDead=parseInt(document.getElementById('pf-farr-dead').value)||0;
+    const farrBoar=document.getElementById('pf-farr-boar').value.trim();
+    const farrBreed=document.getElementById('pf-farr-breed').value.trim();
+    if(farrDate||farrBorn||farrBoar){ data.breedingFarrowing=[{date:farrDate,numberBorn:farrBorn,numberFemale:farrFemale,numberMale:farrMale,numberLive:farrLive,numberDead:farrDead,boarTag:farrBoar,boarBreed:farrBreed}]; }
+  }
 
   if(editingPigId){
     const idx=pigs.findIndex(p=>p.id===editingPigId);
@@ -1569,12 +1737,23 @@ function savePig(e){
       data.treatments=pigs[idx].treatments;
       data.breeding=pigs[idx].breeding;
       data.feedLog=pigs[idx].feedLog;
+      data.parasiteControl=pigs[idx].parasiteControl||[];
+      if(!data.heatObservation) data.heatObservation=pigs[idx].heatObservation||[];
+      if(!data.breedingGestation) data.breedingGestation=pigs[idx].breedingGestation||[];
+      if(!data.breedingFarrowing) data.breedingFarrowing=pigs[idx].breedingFarrowing||[];
       data.added=pigs[idx].added;
       pigs[idx]=data;
     }
   } else {
     if(pigs.find(p=>p.id===id)){ alert('A pig with this ID already exists.'); return; }
-    data.vaccinations=[];data.treatments=[];data.breeding=[];data.feedLog=[];
+    data.vaccinations=[];
+    data.treatments=[];
+    data.breeding=[];
+    data.feedLog=[];
+    data.parasiteControl=[];
+    if(!data.heatObservation) data.heatObservation=[];
+    if(!data.breedingGestation) data.breedingGestation=[];
+    if(!data.breedingFarrowing) data.breedingFarrowing=[];
     pigs.push(data);
   }
   saveData();
@@ -1594,6 +1773,177 @@ function deleteCurrentPig(){
   closeModal('pig-modal');
   renderPigList();
   updateNavCount();
+}
+
+// ── PRINT PIG RECORD ──────────────────────────────────────────────────
+function printPigRecord(){
+  const pig=pigs.find(p=>p.id===currentPigId);
+  if(!pig) return;
+
+  const age=calcAge(pig.dob);
+  const isFemale=pig.sex==='Sow'||pig.sex==='Gilt';
+
+  // Record table builders
+  const vaccRows=pig.vaccinations.length
+    ?pig.vaccinations.map(v=>`<tr><td>${v.vaccine}</td><td>${formatDate(v.date)}</td><td>${v.due?formatDate(v.due):'—'}</td><td>${v.by||'—'}</td></tr>`).join('')
+    :'<tr><td colspan="4" style="text-align:center;color:#888">No vaccinations recorded</td></tr>';
+
+  const treatRows=pig.treatments.length
+    ?pig.treatments.map(t=>`<tr><td>${t.medication}</td><td>${t.dosage||'—'}</td><td>${t.condition||'—'}</td><td>${formatDate(t.date)}</td><td>${t.veterinarian||t.vet||'—'}</td></tr>`).join('')
+    :'<tr><td colspan="5" style="text-align:center;color:#888">No treatments recorded</td></tr>';
+
+  const parasiteRows=pig.parasiteControl&&pig.parasiteControl.length
+    ?pig.parasiteControl.map(p=>`<tr><td>${formatDate(p.date)}</td><td>${p.method||'—'}</td><td>${p.result||'—'}</td></tr>`).join('')
+    :'<tr><td colspan="3" style="text-align:center;color:#888">No parasite control records</td></tr>';
+
+  const feedRows=pig.feedLog.length
+    ?[...pig.feedLog].reverse().map(f=>`<tr><td>${formatDate(f.date)}</td><td>${f.weight?f.weight+' kg':'—'}</td><td>${f.feedType||'—'}</td><td>${f.feedAmount?f.feedAmount+' kg':'—'}</td></tr>`).join('')
+    :'<tr><td colspan="4" style="text-align:center;color:#888">No feed records</td></tr>';
+
+  // Female-specific sections
+  let femaleHTML='';
+  if(isFemale){
+    const heatRows=pig.heatObservation&&pig.heatObservation.length
+      ?pig.heatObservation.map(h=>`<tr><td>${formatDate(h.date)}</td><td>${h.description||'—'}</td><td>${h.heatEnd?formatDate(h.heatEnd):'—'}</td></tr>`).join('')
+      :'<tr><td colspan="3" style="text-align:center;color:#888">No heat observations recorded</td></tr>';
+
+    const gestRows=pig.breedingGestation&&pig.breedingGestation.length
+      ?pig.breedingGestation.map(g=>`<tr><td>${formatDate(g.matedDate)}</td><td>${formatDate(g.dueDate)}</td><td>${g.actualDate?formatDate(g.actualDate):'—'}</td><td>${g.boarTag||'—'}</td></tr>`).join('')
+      :'<tr><td colspan="4" style="text-align:center;color:#888">No breeding/gestation records</td></tr>';
+
+    const farrRows=pig.breedingFarrowing&&pig.breedingFarrowing.length
+      ?pig.breedingFarrowing.map(f=>`<tr><td>${formatDate(f.date)}</td><td>${f.numberBorn||0}</td><td>${f.numberFemale||0}</td><td>${f.numberMale||0}</td><td>${f.numberLive||0}</td><td>${f.numberDead||0}</td><td>${f.boarTag||'—'}</td><td>${f.boarBreed||'—'}</td></tr>`).join('')
+      :'<tr><td colspan="8" style="text-align:center;color:#888">No breeding/farrowing records</td></tr>';
+
+    femaleHTML=`
+<div class="section">
+  <div class="sec-title">HEAT OBSERVATION RECORD (${pig.heatObservation?.length||0} record${pig.heatObservation?.length!==1?'s':''})</div>
+  <table><thead><tr><th>DATE</th><th>DESCRIPTION / SIGNS DETECTED</th><th>DATE END OF HEAT</th></tr></thead>
+  <tbody>${heatRows}</tbody></table>
+</div>
+
+<div class="section">
+  <div class="sec-title">BREEDING AND GESTATION RECORD (${pig.breedingGestation?.length||0} record${pig.breedingGestation?.length!==1?'s':''})</div>
+  <table><thead><tr><th>MATED DATE</th><th>DUE DATE</th><th>ACTUAL DATE</th><th>BOAR TAG#</th></tr></thead>
+  <tbody>${gestRows}</tbody></table>
+</div>
+
+<div class="section">
+  <div class="sec-title">BREEDING AND FARROWING RECORD (${pig.breedingFarrowing?.length||0} record${pig.breedingFarrowing?.length!==1?'s':''})</div>
+  <table><thead><tr><th>DATE</th><th>NO. BORN</th><th>NO. FEMALE</th><th>NO. MALE</th><th>NO. LIVE</th><th>NO. DEAD</th><th>BOAR TAG#</th><th>BOAR BREED</th></tr></thead>
+  <tbody>${farrRows}</tbody></table>
+</div>`;
+  }
+
+  const html=`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>${pig.id} — ${pig.name||'Unnamed'} | PigTrack Record</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#1a1a1a;background:#fff;padding:28px 32px}
+  .gender-badge{font-size:16px;font-weight:700;color:#fff;background:#2E7D32;padding:4px 12px;border-radius:4px;display:inline-block;margin-bottom:12px}
+  .rec-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #2E7D32;padding-bottom:14px;margin-bottom:20px}
+  .rec-farm{font-size:11px;font-weight:700;color:#2E7D32;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
+  .rec-title{font-size:22px;font-weight:800;color:#111;letter-spacing:.3px}
+  .rec-sub{font-size:11.5px;color:#555;margin-top:2px}
+  .rec-date{font-size:11px;color:#777;text-align:right}
+  .rec-id{font-size:13px;font-weight:700;color:#2E7D32;text-align:right}
+  .identity{display:flex;gap:0;border:1.5px solid #ddd;border-radius:8px;overflow:hidden;margin-bottom:20px}
+  .id-block{flex:1;padding:12px 16px;border-right:1px solid #ddd}
+  .id-block:last-child{border-right:none}
+  .id-lbl{font-size:9.5px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}
+  .id-val{font-size:14px;font-weight:700;color:#111}
+  .section{margin-bottom:22px}
+  .sec-title{font-size:11px;font-weight:800;color:#2E7D32;text-transform:uppercase;letter-spacing:.8px;border-bottom:1.5px solid #e8f5e9;padding-bottom:5px;margin-bottom:12px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{background:#f0f7f0;padding:7px 10px;text-align:left;font-weight:700;color:#2E7D32;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #c8e6c9}
+  td{padding:7px 10px;border-bottom:1px solid #eee;color:#222}
+  tr:last-child td{border-bottom:none}
+  tr:nth-child(even) td{background:#fafafa}
+  .rec-footer{border-top:1.5px solid #ddd;padding-top:12px;margin-top:28px;display:flex;justify-content:space-between;font-size:10px;color:#999}
+  @media print{body{padding:16px 20px}.section{page-break-inside:avoid}@page{margin:1.5cm;size:A4}}
+</style>
+</head>
+<body>
+
+<div class="gender-badge">${pig.sex}</div>
+<div class="rec-header">
+  <div>
+    <div class="rec-farm">🐷 Royal Baobab Farms · PigTrack</div>
+    <div class="rec-title">${pig.name||'Unnamed Pig'}</div>
+    <div class="rec-sub">${pig.breed}${pig.colour?' · '+pig.colour:''} · ${pig.id}</div>
+  </div>
+  <div style="text-align:right">
+    <div class="rec-id">${pig.id}</div>
+    <div class="rec-date">Printed: ${formatDate(new Date().toISOString().split('T')[0])}</div>
+  </div>
+</div>
+
+<div class="identity">
+  <div class="id-block"><div class="id-lbl">TAG #</div><div class="id-val">${pig.id}</div></div>
+  <div class="id-block"><div class="id-lbl">NAME</div><div class="id-val">${pig.name||'—'}</div></div>
+  <div class="id-block"><div class="id-lbl">BREED</div><div class="id-val">${pig.breed}</div></div>
+  <div class="id-block"><div class="id-lbl">COLOUR</div><div class="id-val">${pig.colour||'—'}</div></div>
+  <div class="id-block"><div class="id-lbl">GENDER</div><div class="id-val">${pig.sex}</div></div>
+  <div class="id-block"><div class="id-lbl">BREED PURPOSE</div><div class="id-val">${pig.breedPurpose||'—'}</div></div>
+  <div class="id-block"><div class="id-lbl">DATE OF BIRTH</div><div class="id-val">${formatDate(pig.dob)}</div></div>
+  <div class="id-block"><div class="id-lbl">AGE</div><div class="id-val">${age}</div></div>
+  <div class="id-block"><div class="id-lbl">DATE ACQUIRED</div><div class="id-val">${pig.dateAcquired?formatDate(pig.dateAcquired):'—'}</div></div>
+  <div class="id-block"><div class="id-lbl">WEIGHT</div><div class="id-val">${pig.weight?pig.weight+' kg':'—'}</div></div>
+  <div class="id-block"><div class="id-lbl">PEN / LOCATION</div><div class="id-val">${pig.pen||'—'}</div></div>
+  <div class="id-block"><div class="id-lbl">STATUS</div><div class="id-val">${pig.status}</div></div>
+  <div class="id-block"><div class="id-lbl">BOAR TAG #</div><div class="id-val">${pig.sire||'—'}</div></div>
+  <div class="id-block"><div class="id-lbl">SOW TAG #</div><div class="id-val">${pig.dam||'—'}</div></div>
+  <div class="id-block"><div class="id-lbl">ACQUIRED FROM</div><div class="id-val">${pig.acquiredFrom||'—'}</div></div>
+  <div class="id-block"><div class="id-lbl">PHONE</div><div class="id-val">${pig.phone||'—'}</div></div>
+  <div class="id-block"><div class="id-lbl">ADDRESS</div><div class="id-val">${pig.address||'—'}</div></div>
+</div>
+
+<div class="section">
+  <div class="sec-title">WEIGHT RECORD (${pig.feedLog.length} record${pig.feedLog.length!==1?'s':''})</div>
+  <table><thead><tr><th>DATE</th><th>KG</th></tr></thead>
+  <tbody>${pig.feedLog.length?[...pig.feedLog].reverse().map(f=>`<tr><td>${formatDate(f.date)}</td><td>${f.weight||'—'}</td></tr>`).join(''):'<tr><td colspan="2" style="text-align:center;color:#888">No weight records</td></tr>'}</tbody></table>
+</div>
+
+<div class="section">
+  <div class="sec-title">FEEDING RECORD (${pig.feedLog.length} record${pig.feedLog.length!==1?'s':''})</div>
+  <table><thead><tr><th>PERIOD</th><th>FEED COMBINATION</th><th>DATE</th><th>QUANTITY</th></tr></thead>
+  <tbody>${feedRows}</tbody></table>
+</div>
+
+<div class="section">
+  <div class="sec-title">VACCINATION AND SUPPLEMENT RECORD (${pig.vaccinations.length} record${pig.vaccinations.length!==1?'s':''})</div>
+  <table><thead><tr><th>TARGET DISEASE</th><th>DATE GIVEN</th><th>NEXT DUE</th><th>ADMINISTERED BY</th></tr></thead>
+  <tbody>${vaccRows}</tbody></table>
+</div>
+
+<div class="section">
+  <div class="sec-title">MEDICAL TREATMENT RECORD (${pig.treatments.length} record${pig.treatments.length!==1?'s':''})</div>
+  <table><thead><tr><th>NATURE OF ILLNESS/INJURY</th><th>MEDICATION</th><th>DOSAGE</th><th>DATE</th><th>VETERINARIAN</th></tr></thead>
+  <tbody>${treatRows}</tbody></table>
+</div>
+
+<div class="section">
+  <div class="sec-title">PARASITE CONTROL RECORD (${pig.parasiteControl?.length||0} record${pig.parasiteControl?.length!==1?'s':''})</div>
+  <table><thead><tr><th>DATE</th><th>DEWORMER / METHOD</th><th>RESULT</th></tr></thead>
+  <tbody>${parasiteRows}</tbody></table>
+</div>
+
+${femaleHTML}
+
+<div class="rec-footer">
+  <span>PigTrack — Royal Baobab Farms Piggery Management System</span>
+  <span>Record ID: ${pig.id} | Generated: ${new Date().toLocaleString()}</span>
+</div>
+
+<script>window.onload=()=>window.print()<\/script>
+</body></html>`;
+
+  const w=window.open('','_blank','width=900,height=700');
+  w.document.write(html);
+  w.document.close();
 }
 
 // ── HEALTH RECORDS ──────────────────────────────────────────────────

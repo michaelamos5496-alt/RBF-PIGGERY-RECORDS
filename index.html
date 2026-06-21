@@ -1846,12 +1846,16 @@ function savePig(e){
   updateNavCount();
 }
 
-function deleteCurrentPig(){
+async function deleteCurrentPig(){
   const pig=pigs.find(p=>p.id===currentPigId);
   if(!pig) return;
   if(!confirm(`Delete ${pig.id}${pig.name?' — '+pig.name:''}? This cannot be undone.`)) return;
   pigs=pigs.filter(p=>p.id!==currentPigId);
-  saveData();
+  try {
+    await supabase.from('pigs').delete().eq('id', currentPigId);
+  } catch(e) {
+    console.error('Delete failed:', e.message);
+  }
   closeModal('pig-modal');
   renderPigList();
   updateNavCount();

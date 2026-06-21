@@ -18,6 +18,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -480,9 +481,6 @@ textarea.form-control{resize:vertical;min-height:70px}
   .panel,.stat-card,.pig-card,.info-field,.breeding-card,.chart-wrap{background:#fff!important;border:1px solid #ccc!important;box-shadow:none!important;color:#111!important}
 }
 </style>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"></script>
 </head>
 <noscript><div style="font-family:sans-serif;padding:40px;text-align:center;color:#c62828;background:#fff3f3;border:2px solid #c62828;border-radius:10px;margin:40px auto;max-width:480px"><h2>JavaScript Required</h2><p>PigTrack requires JavaScript to run. Please enable JS in your browser and refresh.</p></div></noscript>
 <body>
@@ -1062,58 +1060,54 @@ let healthFormType = 'vaccination';
 let activeStatuses = new Set(['Active','Quarantine','Sold','Deceased']);
 let growthChart = null;
 
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyDY4kAMUWk1qcSb-tACoux74HijO2Rh-Fc",
-  authDomain: "rbf-pig-tracker.firebaseapp.com",
-  projectId: "rbf-pig-tracker",
-  storageBucket: "rbf-pig-tracker.firebasestorage.app",
-  messagingSenderId: "196111226418",
-  appId: "1:196111226418:web:172ab3ef04de66d21d8e2b",
-  measurementId: "G-NWN5XR1TEB"
-};
+// Supabase setup
+const supabaseUrl = 'https://lplawxekanbkkirpndsi.supabase.co';
+const supabaseKey = 'sb_publishable_27IdYC4GYmP2RHmn4Rq_aQ_1RHbcagn';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+let syncListener = null;
 
-let unsubscribeSnapshot = null;
-
-// Load data from Firestore and listen for real-time updates
-async function loadDataFromFirestore(){
-  // Unsubscribe from previous listener
-  if(unsubscribeSnapshot) unsubscribeSnapshot();
-
-  // Real-time listener - updates when data changes on any device
-  unsubscribeSnapshot = db.collection('pigtrack').doc('shared').collection('pigs').onSnapshot(snapshot => {
+async function loadData(){
+  try {
+    const { data, error } = await supabase.from('pigs').select('*');
+    if(error) {
+      console.error('Load error:', error);
+      pigs = [];
+    } else {
+      pigs = data || [];
+    }
+  } catch(e) {
+    console.error('Load failed:', e);
     pigs = [];
-    snapshot.forEach(doc => {
-      pigs.push({id: doc.id, ...doc.data()});
-    });
-    renderAllPages();
-  }, error => {
-    console.error('Error loading data:', error);
-  });
+  }
 }
 
 async function saveData(){
-  // Save all pigs to shared Firestore collection
-  const batch = db.batch();
-  const collection = db.collection('pigtrack').doc('shared').collection('pigs');
-
-  const existingDocs = await collection.get();
-  existingDocs.forEach(doc => batch.delete(doc.ref));
-
-  pigs.forEach(pig => {
-    const docRef = collection.doc(pig.id);
-    batch.set(docRef, pig);
-  });
-
   try {
-    await batch.commit();
-  } catch(error) {
-    console.error('Error saving data:', error);
+    // Delete all existing records
+    await supabase.from('pigs').delete().neq('id', null);
+
+    // Insert new records
+    if(pigs.length > 0) {
+      const { error } = await supabase.from('pigs').insert(pigs);
+      if(error) console.error('Save error:', error);
+    }
+  } catch(e) {
+    console.error('Save failed:', e);
   }
+}
+
+function setupRealtimeSync(){
+  if(syncListener) syncListener.unsubscribe();
+
+  syncListener = supabase.channel('pigs-channel')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'pigs' }, (payload) => {
+      loadData().then(() => {
+        renderDashboard();
+        renderPigList();
+      });
+    })
+    .subscribe();
 }
 
 function addDays(dateStr, n){
@@ -2349,14 +2343,12 @@ self.addEventListener('fetch',e=>{
   document.head.appendChild(link);
 })();
 
-// ── RENDER HELPER ──────────────────────────────────────────────────
-function renderAllPages(){
+// ── INIT ──────────────────────────────────────────────────
+loadData().then(() => {
   renderDashboard();
   renderPigList();
-}
-
-// Initialize app on load
-loadDataFromFirestore();
+  setupRealtimeSync();
+});
 </script>
 </body>
 </html>

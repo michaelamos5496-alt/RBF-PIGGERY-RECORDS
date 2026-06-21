@@ -1069,31 +1069,29 @@ let syncListener = null;
 
 async function loadData(){
   try {
+    console.log('Loading from Supabase...');
     const { data, error } = await supabase.from('pigs').select('*');
     if(error) {
-      console.error('Load error:', error);
+      console.error('Load error:', error.message);
       pigs = [];
     } else {
       pigs = data || [];
+      console.log('✅ Loaded', pigs.length, 'pigs');
     }
   } catch(e) {
-    console.error('Load failed:', e);
+    console.error('Load failed:', e.message);
     pigs = [];
   }
 }
 
 async function saveData(){
   try {
-    // Delete all existing records
-    await supabase.from('pigs').delete().neq('id', null);
-
-    // Insert new records
-    if(pigs.length > 0) {
-      const { error } = await supabase.from('pigs').insert(pigs);
-      if(error) console.error('Save error:', error);
+    for(const pig of pigs) {
+      const { error } = await supabase.from('pigs').upsert(pig, { onConflict: 'id' });
+      if(error) console.error('Save error:', pig.id, error.message);
     }
   } catch(e) {
-    console.error('Save failed:', e);
+    console.error('Save failed:', e.message);
   }
 }
 

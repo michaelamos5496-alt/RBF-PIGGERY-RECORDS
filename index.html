@@ -537,6 +537,10 @@ textarea.form-control{resize:vertical;min-height:70px}
   <!-- DASHBOARD PAGE -->
   <div id="page-dashboard" class="page active">
     <div class="stat-grid" id="stat-cards"></div>
+    <div style="margin-bottom:20px;display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('csv-import-input').click()" title="Import pigs from CSV"><i class="fas fa-file-upload"></i> Import CSV</button>
+      <input type="file" id="csv-import-input" accept=".csv" style="display:none" onchange="handleCSVImport(event)">
+    </div>
     <div class="dash-grid">
       <div class="panel">
         <div class="panel-hd"><h3><i class="fas fa-bell" style="color:var(--orange);margin-right:6px"></i>Upcoming Farrowings (30 days)</h3></div>
@@ -1106,6 +1110,77 @@ function setupRealtimeSync(){
       });
     })
     .subscribe();
+}
+
+function handleCSVImport(event){
+  const file=event.target.files[0];
+  if(!file) return;
+
+  const reader=new FileReader();
+  reader.onload=async (e)=>{
+    try {
+      const csv=e.target.result;
+      const lines=csv.trim().split('\n');
+      if(lines.length<2){ alert('CSV must have header row and at least one data row'); return; }
+
+      const headers=lines[0].split(',').map(h=>h.trim().toLowerCase());
+      const imported=[];
+
+      for(let i=1;i<lines.length;i++){
+        const values=lines[i].split(',').map(v=>v.trim());
+        if(!values[0]) continue;
+
+        const row={};
+        headers.forEach((h,idx)=>{ row[h]=values[idx]||''; });
+
+        const pig={
+          id:row.id||row['tag #']||row['tag']||`PIG-${Date.now()}-${i}`,
+          name:row.name||'',
+          breed:row.breed||'',
+          sex:row.sex||row.gender||'',
+          dob:row.dob||row['date of birth']||new Date().toISOString().split('T')[0],
+          colour:row.colour||row.color||'',
+          breedPurpose:row['breed purpose']||row.breedpurpose||'',
+          dateAcquired:row['date acquired']||row.dateacquired||'',
+          weight:row.weight?parseFloat(row.weight):null,
+          status:row.status||'Active',
+          health:row.health||'Healthy',
+          pen:row.pen||row.location||'',
+          sire:row.sire||row['boar tag #']||'',
+          dam:row.dam||row['sow tag #']||'',
+          acquiredFrom:row['acquired from']||row.acquiredfrom||'',
+          phone:row.phone||'',
+          address:row.address||'',
+          notes:row.notes||'',
+          maternityNum:(row.sex==='Sow'||row.sex==='Gilt')&&row['maternity #']?parseInt(row['maternity #']):null,
+          vaccinations:[],
+          treatments:[],
+          breeding:[],
+          feedLog:[],
+          added:new Date().toISOString().split('T')[0]
+        };
+
+        if(!pigs.find(p=>p.id===pig.id)){
+          pigs.push(pig);
+          imported.push(pig.id);
+        }
+      }
+
+      if(imported.length>0){
+        await saveData();
+        renderDashboard();
+        renderPigList();
+        alert(`✅ Imported ${imported.length} pig(s): ${imported.slice(0,5).join(', ')}${imported.length>5?'...':''}`);
+      } else {
+        alert('No new pigs to import (duplicates or empty rows)');
+      }
+    } catch(err){
+      console.error('CSV import error:', err);
+      alert('Error importing CSV: '+err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value='';
 }
 
 function addDays(dateStr, n){

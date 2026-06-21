@@ -1134,12 +1134,14 @@ function handleCSVImport(event){
         headers.forEach((h,idx)=>{ row[h]=values[idx]||''; });
 
         const sex=row.sex||row.gender||'';
+        const dob=row.dob||row['date of birth']||new Date().toISOString().split('T')[0];
+
         const pig={
           id:row.id||row['tag #']||row['tag']||`PIG-${Date.now()}-${i}`,
           name:row.name||'',
           breed:row.breed||'',
           sex:sex,
-          dob:row.dob||row['date of birth']||new Date().toISOString().split('T')[0],
+          dob:dob,
           colour:row.colour||row.color||'',
           breedPurpose:row['breed purpose']||row.breedpurpose||'',
           dateAcquired:row['date acquired']||row.dateacquired||'',
@@ -1147,8 +1149,8 @@ function handleCSVImport(event){
           status:row.status||'Active',
           health:row.health||'Healthy',
           pen:row.pen||row.location||'',
-          sire:row.sire||row['boar tag #']||'',
-          dam:row.dam||row['sow tag #']||'',
+          sire:row.sire||row['boar tag #']||row['sire tag']||'',
+          dam:row.dam||row['sow tag #']||row['dam tag']||'',
           acquiredFrom:row['acquired from']||row.acquiredfrom||'',
           phone:row.phone||'',
           address:row.address||'',
@@ -1165,72 +1167,6 @@ function handleCSVImport(event){
           added:new Date().toISOString().split('T')[0]
         };
 
-        // Parse weight records
-        for(let w=1;w<=10;w++){
-          const wDate=row[`weight_${w}_date`]||row[`weight record ${w} date`]||'';
-          const wValue=row[`weight_${w}_value`]||row[`weight_${w}_weight`]||row[`weight record ${w} weight`]||'';
-          const wRemark=row[`weight_${w}_remark`]||row[`weight record ${w} remark`]||'';
-          if(wDate||wValue) pig.feedLog.push({date:wDate,weight:wValue?parseFloat(wValue):null,remark:wRemark});
-        }
-
-        // Parse vaccination records
-        for(let v=1;v<=10;v++){
-          const vVaccine=row[`vaccination_${v}_vaccine`]||row[`vaccination ${v} vaccine`]||'';
-          const vDate=row[`vaccination_${v}_date`]||row[`vaccination ${v} date`]||'';
-          const vDue=row[`vaccination_${v}_due`]||row[`vaccination ${v} due date`]||'';
-          const vVet=row[`vaccination_${v}_veterinarian`]||row[`vaccination ${v} vet`]||'';
-          if(vVaccine||vDate) pig.vaccinations.push({vaccine:vVaccine,date:vDate,due:vDue,veterinarian:vVet});
-        }
-
-        // Parse treatment records
-        for(let t=1;t<=10;t++){
-          const tDate=row[`treatment_${t}_date`]||row[`treatment ${t} date`]||'';
-          const tCondition=row[`treatment_${t}_condition`]||row[`treatment ${t} condition`]||row[`treatment ${t} illness`]||'';
-          const tDewormer=row[`treatment_${t}_dewormer`]||row[`treatment ${t} dewormer`]||'';
-          const tVet=row[`treatment_${t}_veterinarian`]||row[`treatment ${t} vet`]||'';
-          const tRemark=row[`treatment_${t}_remark`]||row[`treatment ${t} remark`]||'';
-          if(tDate||tCondition) pig.treatments.push({date:tDate,condition:tCondition,dewormer:tDewormer,veterinarian:tVet,remark:tRemark});
-        }
-
-        // Parse parasite control records (females)
-        if(sex==='Sow'||sex==='Gilt'){
-          for(let p=1;p<=10;p++){
-            const pDate=row[`parasite_${p}_date`]||row[`parasite control ${p} date`]||'';
-            const pDewormer=row[`parasite_${p}_dewormer`]||row[`parasite control ${p} dewormer`]||'';
-            const pMethod=row[`parasite_${p}_method`]||row[`parasite control ${p} method`]||'';
-            if(pDate||pDewormer) pig.parasiteControl.push({date:pDate,dewormer:pDewormer,method:pMethod});
-          }
-
-          // Parse heat observation records
-          for(let h=1;h<=10;h++){
-            const hDate=row[`heat_${h}_date`]||row[`heat observation ${h} date`]||'';
-            const hSigns=row[`heat_${h}_signs`]||row[`heat observation ${h} signs`]||row[`heat observation ${h} description`]||'';
-            const hEnd=row[`heat_${h}_end`]||row[`heat observation ${h} end date`]||'';
-            if(hDate||hSigns) pig.heatObservation.push({date:hDate,description:hSigns,heatEnd:hEnd});
-          }
-
-          // Parse breeding and gestation records
-          for(let g=1;g<=10;g++){
-            const gMated=row[`gestation_${g}_mated`]||row[`breeding gestation ${g} mated`]||'';
-            const gDue=row[`gestation_${g}_due`]||row[`breeding gestation ${g} due`]||'';
-            const gBoar=row[`gestation_${g}_boar`]||row[`breeding gestation ${g} boar`]||'';
-            if(gMated||gDue) pig.breedingGestation.push({matedDate:gMated,dueDate:gDue,boarTag:gBoar});
-          }
-
-          // Parse breeding and farrowing records
-          for(let f=1;f<=10;f++){
-            const fDate=row[`farrowing_${f}_date`]||row[`breeding farrowing ${f} date`]||'';
-            const fBorn=row[`farrowing_${f}_born`]||row[`breeding farrowing ${f} born`]||'';
-            const fFemale=row[`farrowing_${f}_female`]||row[`breeding farrowing ${f} female`]||'';
-            const fMale=row[`farrowing_${f}_male`]||row[`breeding farrowing ${f} male`]||'';
-            const fLive=row[`farrowing_${f}_live`]||row[`breeding farrowing ${f} live`]||'';
-            const fDead=row[`farrowing_${f}_dead`]||row[`breeding farrowing ${f} dead`]||'';
-            const fBoar=row[`farrowing_${f}_boar`]||row[`breeding farrowing ${f} boar`]||'';
-            const fBreed=row[`farrowing_${f}_breed`]||row[`breeding farrowing ${f} breed`]||'';
-            if(fDate||fBorn) pig.breedingFarrowing.push({date:fDate,numberBorn:fBorn?parseInt(fBorn):0,numberFemale:fFemale?parseInt(fFemale):0,numberMale:fMale?parseInt(fMale):0,numberLive:fLive?parseInt(fLive):0,numberDead:fDead?parseInt(fDead):0,boarTag:fBoar,boarBreed:fBreed});
-          }
-        }
-
         if(!pigs.find(p=>p.id===pig.id)){
           pigs.push(pig);
           imported.push(pig.id);
@@ -1241,7 +1177,7 @@ function handleCSVImport(event){
         await saveData();
         renderDashboard();
         renderPigList();
-        alert(`✅ Imported ${imported.length} pig(s) with all records: ${imported.slice(0,5).join(', ')}${imported.length>5?'...':''}`);
+        alert(`✅ Imported ${imported.length} pig(s):\n${imported.join(', ')}`);
       } else {
         alert('No new pigs to import (duplicates or empty rows)');
       }

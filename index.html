@@ -1827,8 +1827,8 @@ function updateGenderFields(){
   }
 
   if(isFemale){
-    const femaleCount=pigs.filter(p=>(p.sex==='Sow'||p.sex==='Gilt')).length;
-    maternityField.value=femaleCount+1;
+    const femalesWithCycles=pigs.filter(p=>(p.sex==='Sow'||p.sex==='Gilt')&&p.breedingFarrowing&&p.breedingFarrowing.length>0).length;
+    maternityField.value=femalesWithCycles>0?femalesWithCycles+1:'';
   } else {
     maternityField.value='';
   }

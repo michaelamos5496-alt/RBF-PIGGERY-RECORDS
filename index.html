@@ -771,8 +771,11 @@ textarea.form-control{resize:vertical;min-height:70px}
             <input class="form-control" id="pf-maternity-cycle" type="number" min="1" readonly style="background:rgba(0,0,0,0.15)">
           </div>
           <div class="form-group">
-            <label class="form-label">BREED PURPOSE</label>
-            <input class="form-control" id="pf-breed-purpose" placeholder="e.g. Breeding, Meat, Show">
+            <label class="form-label">BREED PURPOSE <span class="req">*</span></label>
+            <select class="form-control" id="pf-breed-purpose" required>
+              <option value="">Select purpose</option>
+              <option>Breeding</option><option>Meat</option><option>Show</option><option>Breeding & Meat</option><option>Other</option>
+            </select>
           </div>
           <div class="form-group">
             <label class="form-label">DATE OF BIRTH <span class="req">*</span></label>
@@ -787,8 +790,9 @@ textarea.form-control{resize:vertical;min-height:70px}
             <input class="form-control" id="pf-weight" type="number" step="0.1" min="0" placeholder="e.g. 85.5">
           </div>
           <div class="form-group">
-            <label class="form-label">Status</label>
-            <select class="form-control" id="pf-status">
+            <label class="form-label">Status <span class="req">*</span></label>
+            <select class="form-control" id="pf-status" required>
+              <option value="">Select status</option>
               <option>Active</option><option>Quarantine</option><option>Sold</option><option>Deceased</option>
             </select>
           </div>
@@ -1112,6 +1116,43 @@ function setupRealtimeSync(){
     .subscribe();
 }
 
+function parseCSVLine(line){
+  const result=[];
+  let current='';
+  let inQuotes=false;
+  for(let i=0;i<line.length;i++){
+    const char=line[i];
+    const nextChar=line[i+1];
+    if(char==='"'){
+      if(inQuotes&&nextChar==='"'){ current+='"'; i++; }
+      else { inQuotes=!inQuotes; }
+    } else if(char===','&&!inQuotes){
+      result.push(current.trim());
+      current='';
+    } else {
+      current+=char;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+function normalizeHeader(header){
+  return header.toLowerCase().replace(/[^a-z0-9]/g,'');
+}
+
+function getFieldValue(row,headerMap,...keys){
+  for(const key of keys){
+    const normalized=normalizeHeader(key);
+    for(const [idx,header] of headerMap.entries()){
+      if(normalizeHeader(header)===normalized&&row[idx]){
+        return row[idx];
+      }
+    }
+  }
+  return '';
+}
+
 function handleCSVImport(event){
   const file=event.target.files[0];
   if(!file) return;
@@ -1120,42 +1161,45 @@ function handleCSVImport(event){
   reader.onload=async (e)=>{
     try {
       const csv=e.target.result;
-      const lines=csv.trim().split('\n');
+      const lines=csv.split(/\r?\n/).filter(l=>l.trim());
       if(lines.length<2){ alert('CSV must have header row and at least one data row'); return; }
 
-      const headers=lines[0].split(',').map(h=>h.trim().toLowerCase());
+      const headers=parseCSVLine(lines[0]);
+      const headerMap=headers.map(h=>h.toLowerCase());
       const imported=[];
 
       for(let i=1;i<lines.length;i++){
-        const values=lines[i].split(',').map(v=>v.trim());
+        const values=parseCSVLine(lines[i]);
         if(!values[0]) continue;
 
-        const row={};
-        headers.forEach((h,idx)=>{ row[h]=values[idx]||''; });
+        const getId=(v)=>getFieldValue({...Object.fromEntries(values.map((val,idx)=>[idx,val]))},headers,'id','tag #','tag','tag number');
+        const id=getId()||`PIG-${Date.now()}-${i}`;
 
-        const sex=row.sex||row.gender||'';
-        const dob=row.dob||row['date of birth']||new Date().toISOString().split('T')[0];
+        const getVal=(k)=>getFieldValue({...Object.fromEntries(values.map((val,idx)=>[idx,val]))},headers,...k.split('|'));
+
+        const sex=getVal('sex|gender');
+        const dob=getVal('dob|date of birth')||new Date().toISOString().split('T')[0];
 
         const pig={
-          id:row.id||row['tag #']||row['tag']||`PIG-${Date.now()}-${i}`,
-          name:row.name||'',
-          breed:row.breed||'',
+          id,
+          name:getVal('name'),
+          breed:getVal('breed'),
           sex:sex,
           dob:dob,
-          colour:row.colour||row.color||'',
-          breedPurpose:row['breed purpose']||row.breedpurpose||'',
-          dateAcquired:row['date acquired']||row.dateacquired||'',
-          weight:row.weight?parseFloat(row.weight):null,
-          status:row.status||'Active',
-          health:row.health||'Healthy',
-          pen:row.pen||row.location||'',
-          sire:row.sire||row['boar tag #']||row['sire tag']||'',
-          dam:row.dam||row['sow tag #']||row['dam tag']||'',
-          acquiredFrom:row['acquired from']||row.acquiredfrom||'',
-          phone:row.phone||'',
-          address:row.address||'',
-          notes:row.notes||'',
-          maternityNum:(sex==='Sow'||sex==='Gilt')&&row['maternity #']?parseInt(row['maternity #']):null,
+          colour:getVal('colour|color'),
+          breedPurpose:getVal('breed purpose|breed purpose'),
+          dateAcquired:getVal('date acquired|date acquired'),
+          weight:getVal('weight')?parseFloat(getVal('weight')):null,
+          status:getVal('status')||'Active',
+          health:getVal('health')||'Healthy',
+          pen:getVal('pen|location'),
+          sire:getVal('sire|boar tag|boar tag #'),
+          dam:getVal('dam|sow tag|sow tag #'),
+          acquiredFrom:getVal('acquired from|supplier'),
+          phone:getVal('phone|contact'),
+          address:getVal('address'),
+          notes:getVal('notes|remarks|observation'),
+          maternityNum:(sex==='Sow'||sex==='Gilt')&&getVal('maternity #')?parseInt(getVal('maternity #')):null,
           vaccinations:[],
           treatments:[],
           breeding:[],
@@ -1169,7 +1213,7 @@ function handleCSVImport(event){
 
         if(!pigs.find(p=>p.id===pig.id)){
           pigs.push(pig);
-          imported.push(pig.id);
+          imported.push(`${pig.id}${pig.name?' ('+pig.name+')':''}`);
         }
       }
 
@@ -1177,7 +1221,7 @@ function handleCSVImport(event){
         await saveData();
         renderDashboard();
         renderPigList();
-        alert(`✅ Imported ${imported.length} pig(s):\n${imported.join(', ')}`);
+        alert(`✅ Imported ${imported.length} pig(s):\n${imported.slice(0,10).join('\n')}${imported.length>10?'\n...':''}}`);
       } else {
         alert('No new pigs to import (duplicates or empty rows)');
       }
@@ -1848,7 +1892,9 @@ function savePig(e){
   const dob=document.getElementById('pf-dob').value;
   const breed=document.getElementById('pf-breed').value;
   const sex=document.getElementById('pf-sex').value;
-  if(!id||!breed||!sex){ alert('Please fill in ID, Breed, and Sex.'); return; }
+  const status=document.getElementById('pf-status').value;
+  const breedPurpose=document.getElementById('pf-breed-purpose').value;
+  if(!id||!breed||!sex||!status||!breedPurpose){ alert('Please fill in ID, Breed, Sex, Status, and Breed Purpose.'); return; }
 
   const data={
     id,

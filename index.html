@@ -1766,7 +1766,7 @@ function savePig(e){
   const dob=document.getElementById('pf-dob').value;
   const breed=document.getElementById('pf-breed').value;
   const sex=document.getElementById('pf-sex').value;
-  if(!id||!dob||!breed||!sex){ alert('Please fill in required fields.'); return; }
+  if(!id||!breed||!sex){ alert('Please fill in ID, Breed, and Sex.'); return; }
 
   const data={
     id,
